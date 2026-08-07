@@ -14,8 +14,8 @@ import obsws_python as obs
 # ==========================================
 # CONFIGURAZIONE DATI PERSONALI E PERCORSI
 # ==========================================
-API_TOKEN = "8847223467:AAHwqf-_Bd_dITaOpMUfKuN6xxwMpOjdWJA" 
-MIO_ID_TELEGRAM = 124120653 
+API_TOKEN = "PutBotTokenHere" 
+MIO_ID_TELEGRAM = PutIDHere 
 
 SF6_STEAM_URL = "steam://rungameid/1364780"
 OBS_PATH = r"C:\Program Files\obs-studio\bin\64bit\obs64.exe"
