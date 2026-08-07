@@ -70,7 +70,7 @@ if exist "SF6ReplayScript.py" (
     python SF6ReplayScript.py
 ) else (
     echo [ATTENZIONE] Il file 'SF6ReplayScript.py' non e' stato trovato in questa cartella.
-    echo Posiziona questo file .bat di fianco a TEST.py e rilancialo per completare la prima configurazione.
+    echo Posiziona questo file .bat di fianco a SF6ReplayScript.py e rilancialo per completare la prima configurazione.
     echo.
 )
 
