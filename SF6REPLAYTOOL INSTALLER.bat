@@ -62,14 +62,14 @@ echo.
 echo ------------------------------------------------------------
 echo 3. AVVIO DELLA CONFIGURAZIONE DELLO SCRIPT
 echo ------------------------------------------------------------
-echo Assicurati che il file dello script Python (TEST.py) sia nella stessa cartella.
-if exist "TEST.py" (
+echo Assicurati che il file dello script Python (SF6ReplayScript.py) sia nella stessa cartella.
+if exist "SF6ReplayScript.py" (
     echo [OK] File TEST.py trovato. Avvio la configurazione iniziale...
     echo.
     timeout /t 3
-    python TEST.py
+    python SF6ReplayScript.py
 ) else (
-    echo [ATTENZIONE] Il file 'TEST.py' non e' stato trovato in questa cartella.
+    echo [ATTENZIONE] Il file 'SF6ReplayScript.py' non e' stato trovato in questa cartella.
     echo Posiziona questo file .bat di fianco a TEST.py e rilancialo per completare la prima configurazione.
     echo.
 )
