@@ -161,7 +161,7 @@ def obs_watcher_loop():
                             cl.start_record()
                             recording = True
                             rec_started = time.time()
-                            msg_start = f"🔴 REC Partito (Hook nativo): {d.get('p1')} vs {d.get('p2')} (ID: {d.get('id')})"
+                            msg_start = f"🔴 REC Partito: {d.get('p1')} vs {d.get('p2')} (ID: {d.get('id')})"
                             print(msg_start)
                             bot.send_message(MIO_ID_TELEGRAM, msg_start)
                         except Exception as e:
