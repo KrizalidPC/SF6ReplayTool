@@ -135,23 +135,23 @@ Il bot imposterà automaticamente il menu dei comandi rapidi alla prima esecuzio
 | `/spegni` | Avvia un timer di 10 secondi e spegne completamente il PC. |
 
 ### Esempio di scenario in chat:
-> **Tu**: `/registra_replay WD544B58N`
+> **Tu**: `/registra_replay xxxxxxxxx`
 > 
 > **Bot**: 📝 Aggiunto `1` replay alla lista d'attesa.
 > 
-> **Bot**: 🔄 Elaborazione coda: inizio registrazione del replay `WD544B58N`...
+> **Bot**: 🔄 Elaborazione coda: inizio registrazione del replay `xxxxxxxxx`...
 > 
-> **Bot**: 🔴 REC Partito: ChangeTime vs rappz (ID: WD544B58N)
+> **Bot**: 🔴 REC Partito: P1 vs P2 (ID: WD544B58N)
 > 
-> **Bot**: 🏁 Replay `WD544B58N` registrato!
->        📁 File: `ChangeTime vs rappz WD544B58N.mp4`
+> **Bot**: 🏁 Replay `xxxxxxxxx` registrato!
+>        📁 File: `P1 vs P2 xxxxxxxxx.mp4`
 >        *Vuoi caricarlo su YouTube?*
 >        `[ ✅ Sì, Carica ]`  `[ ❌ No, Salta ]`
 > > *(Se l'utente clicca su Sì)*
 > 
-> **Bot**: 🚀 Upload in corso su YouTube per il replay `WD544B58N`...
+> **Bot**: 🚀 Upload in corso su YouTube per il replay `xxxxxxxxx`...
 > 
-> **Bot**: 📺 Caricato con successo su YouTube per il replay `WD544B58N`!
+> **Bot**: 📺 Caricato con successo su YouTube per il replay `xxxxxxxxx`!
 >        🔗 Link: `https://youtu.be`
 
 ---
