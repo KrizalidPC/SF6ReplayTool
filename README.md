@@ -147,4 +147,30 @@ Il bot imposterà automaticamente il menu dei comandi rapidi alla prima esecuzio
 >        📁 File: `ChangeTime vs rappz WD544B58N.mp4`
 >        *Vuoi caricarlo su YouTube?*
 >        `[ ✅ Sì, Carica ]`  `[ ❌ No, Salta ]`
+> > *(Se l'utente clicca su Sì)*
+> 
+> **Bot**: 🚀 Upload in corso su YouTube per il replay `WD544B58N`...
+> 
+> **Bot**: 📺 Caricato con successo su YouTube per il replay `WD544B58N`!
+>        🔗 Link: `https://youtu.be`
+
+---
+
+## 🛠️ Risoluzione dei Problemi (Troubleshooting)
+
+* **L'Orchestrator LUA si blocca nei menu**: I nomi dei flussi interni della UI di Capcom (es. `app.menu.UIFlowTitle.Param`) possono subire variazioni a seguito di aggiornamenti o patch importanti di *Street Fighter 6*. In caso di **blocchi post-aggiornamento**, procedi in questo modo:
+  1. Apri il menu in-game di **REFramework** (tasto `Insert` di default).
+  2. Usa lo strumento **Object Explorer** per identificare i flussi della UI attivi in quel momento.
+  3. Verifica e correggi le costanti **`F_*`** posizionate all'inizio del file `orchestrator.lua` inserendo i nuovi nomi dei flussi.
+
+* **Il replay salta subito e mostra un errore di heartbeat locale**: Controlla il valore di **`HB_GRACE`** nel codice Python. Se il tuo PC o la tua connessione impiegano molto tempo a caricare i menu o i caricamenti interni di SF6, **aumenta questo valore** (attualmente impostato a `40` secondi) per dare più tolleranza alla mod LUA prima che generi il primo file di battito cardiaco.
+
+* **OBS si apre ma il bot continua a mostrare errori di connessione**: Verifica che la password WebSocket inserita nella variabile **`OBS_PASSWORD`** sia identica a quella impostata manualmente all'interno dei menu di *OBS Studio*.
+
+---
+
+## 📝 Licenza
+
+Questo progetto è rilasciato sotto licenza **MIT**.
+
 
