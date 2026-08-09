@@ -65,7 +65,7 @@ Il bot deve poter comunicare con OBS tramite WebSocket e gestire correttamente i
 Il bot include un modulo per caricare le registrazioni direttamente sul tuo canale YouTube.
 
 * **Configurazione delle Credenziali**:
-  1. Accedi a [Google Cloud Console](https://google.com) e crea un progetto.
+  1. Accedi a [Google Cloud Console](https://cloud.google.com/) e crea un progetto.
   2. Abilita le **YouTube Data API v3** e crea una schermata di consenso OAuth inserendo la tua email tra gli *utenti di test*.
   3. Genera un **ID Client OAuth** impostando il tipo di applicazione su *Applicazione Desktop*.
   4. Scarica il file JSON delle credenziali, rinominalo in **`client_secrets.json`** e posizionalo nella cartella principale del bot.
