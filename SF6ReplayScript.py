@@ -14,8 +14,8 @@ import obsws_python as obs
 # ==========================================
 # CONFIGURAZIONE DATI PERSONALI E PERCORSI
 # ==========================================
-API_TOKEN = "InsertBOTFatherTokenHERE" 
-MIO_ID_TELEGRAM = YourIDHere 
+API_TOKEN = "BOTFATHERTOKENHERE" 
+MIO_ID_TELEGRAM = YOURIDHERE 
 
 SF6_STEAM_URL = "steam://rungameid/1364780"
 OBS_PATH = r"C:\Program Files\obs-studio\bin\64bit\obs64.exe"
@@ -34,7 +34,7 @@ OBS_PASSWORD = "" # Lascia vuoto se hai disattivato l'autenticazione nelle impos
 # Limiti di sicurezza e heartbeat presi dal codice originale di GitHub
 MAX_SECONDS = 600
 HB_TIMEOUT = 8
-HB_GRACE = 15
+HB_GRACE = 45
 # ==========================================
 
 bot = telebot.TeleBot(API_TOKEN)
@@ -112,26 +112,39 @@ def obs_watcher_loop():
     mostrato_avviso_attesa = False
     
     while cl is None:
-        # Controlliamo prima se l'eseguibile di OBS è aperto in Windows
+        # Controlliamo se l'eseguibile di OBS è aperto in Windows
         if not processo_in_esecuzione("obs64.exe"):
             if not mostrato_avviso_attesa:
                 print("⏳ OBS Studio è chiuso. Il bot rimarrà in attesa silenziosa finché non lo avvii...")
                 mostrato_avviso_attesa = True
-            time.sleep(5)  # Aspetta 5 secondi prima di ricontrollare se hai aperto OBS
+            time.sleep(5)
             continue
         
-        # Se siamo qui, il processo obs64.exe è stato rilevato! Proviamo a connetterci
+        # Se siamo qui, obs64.exe è in esecuzione. Tentiamo la connessione strutturata
         try:
             print("🚀 OBS Studio rilevato in esecuzione! Tento la sincronizzazione WebSocket...")
-            # Tentativo mirato senza inondare la console di errori traceback
-            cl = obs.ReqClient(host=OBS_HOST, port=OBS_PORT, password=OBS_PASSWORD, timeout=3)
-            versione = cl.get_version()
+            # Istanziamo il client temporaneo
+            temp_cl = obs.ReqClient(host=OBS_HOST, port=OBS_PORT, password=OBS_PASSWORD, timeout=3)
+            
+            # Chiamata di test per verificare che OBS sia PRONTO (gestione Errore 207)
+            versione = temp_cl.get_version()
+            
+            # Se la chiamata va a buon fine senza errori, OBS è pronto!
+            cl = temp_cl
             print(f"✅ Sincronizzazione WebSocket con OBS Studio riuscita! (Versione OBS: {versione.obs_version})")
             bot.send_message(MIO_ID_TELEGRAM, f"✅ Sincronizzazione stabilita con OBS Studio (Porta: {OBS_PORT})")
-        except Exception:
-            print("⏳ OBS si sta ancora caricando o il server WebSocket non è pronto. Riprovo tra 4 secondi...")
-            mostrato_avviso_attesa = False  # Resetta lo stato se OBS dovesse essere chiuso improvvisamente
-            time.sleep(4)
+        
+        except Exception as e:
+            # Estraggo il messaggio di errore per capire se è lo stato non pronto (207)
+            err_msg = str(e)
+            if "207" in err_msg or "not ready" in err_msg.lower():
+                print("⏳ OBS si è avviato ma i moduli interni non sono ancora pronti (Errore 207). Aspetto che si carichi completamente...")
+            else:
+                print(f"⏳ Connessione WebSocket fallita (OBS potrebbe essere ancora in caricamento). Riprovo a breve...")
+            
+            mostrato_avviso_attesa = False  # Resetta lo stato se OBS dovesse chiudersi bruscamente
+            time.sleep(5)  # Aspetta 5 secondi prima del prossimo tentativo di handshake
+
 
     # --- FINE LOGICA DI ATTESA (Il resto rimane invariato) ---
     try:
@@ -185,6 +198,17 @@ def gestisci_coda_lavoro():
         prossimo_id = coda_replay.pop(0)
         bot.send_message(MIO_ID_TELEGRAM, f"🔄 Elaborazione coda: inizio registrazione del replay `{prossimo_id}`. Rimanenti in lista: {len(coda_replay)}")
         
+        # --- PULIZIA PREVENTIVA FILE DI STATO ---
+        # Eliminiamo i vecchi trigger per evitare che il bot legga comandi residui del match precedente
+        try:
+            if TRIG_PATH.exists():
+                TRIG_PATH.unlink()
+            if HB_PATH.exists():
+                HB_PATH.unlink()
+            print("🧹 File di trigger e heartbeat precedenti ripuliti con successo.")
+        except Exception as e:
+            print(f"Avviso pulizia file temporanei: {e}")
+
         dati_coda = {
             "ids": [prossimo_id],
             "current_index": 1
@@ -197,19 +221,32 @@ def gestisci_coda_lavoro():
             bot.send_message(MIO_ID_TELEGRAM, f"❌ Errore scrittura JSON per ID `{prossimo_id}`: {e}")
             continue
 
-        # Se il gioco è chiuso, lo avviamo
+        # Controllo e avvio automatico di OBS Studio
+        if not processo_in_esecuzione("obs64.exe"):
+            if os.path.exists(OBS_PATH):
+                bot.send_message(MIO_ID_TELEGRAM, "⏳ OBS Studio risulta chiuso. Lo sto avviando automaticamente...")
+                obs_dir = os.path.dirname(OBS_PATH)
+                subprocess.Popen(OBS_PATH, cwd=obs_dir)
+                time.sleep(5)
+            else:
+                bot.send_message(MIO_ID_TELEGRAM, f"❌ Impossibile avviare OBS automaticamente. Percorso non trovato:\n`{OBS_PATH}`")
+                in_elaborazione = False
+                return
+
+        # Controllo e avvio automatico del gioco
         if not processo_in_esecuzione("StreetFighter6.exe"):
             webbrowser.open(SF6_STEAM_URL)
-            print("⏳ Avvio di Street Fighter 6 in corso... Attendo 45 secondi per il caricamento iniziale.")
-            time.sleep(45)
+            print("⏳ Avvio di Street Fighter 6 in corso... Attendo il caricamento iniziale.")
+            time.sleep(60) 
         else:
-            # Se il gioco è già aperto, diamo 5 secondi alla mod LUA per leggere il nuovo JSON
-            time.sleep(5)
+            # Se il gioco è già aperto, diamo 6 secondi alla mod LUA di accorgersi del cambio file
+            time.sleep(6)
         
-        # --- NUOVA LOGICA DI SINCRO REPLAY ---
+        # --- LOGICA DI SINCRO REPLAY ---
         print(f"📡 Attendo che il replay {prossimo_id} inizi la registrazione...")
-        # 1. Aspetta che OBS avvi la registrazione tramite l'hook nativo (max 60 secondi)
-        timeout_inizio = time.time() + 60
+        
+        # Timeout esteso a 90 secondi per dare tempo alla mod di digerire la pulizia dei file e caricare
+        timeout_inizio = time.time() + 90  
         while not recording and time.time() < timeout_inizio:
             time.sleep(1)
             
@@ -219,16 +256,17 @@ def gestisci_coda_lavoro():
             continue
 
         print(f"🔴 Replay {prossimo_id} in corso di registrazione. Attendo la fine...")
-        # 2. Rimani in questo punto finché OBS sta registrando il match
+        # Rimani in questo punto finché OBS sta registrando il match
         while recording:
             time.sleep(1)
                 
         bot.send_message(MIO_ID_TELEGRAM, f"🏁 Replay `{prossimo_id}` completato con successo.")
         print(f"✅ Replay {prossimo_id} terminato. Attendo 5 secondi di pausa prima del prossimo ID.")
-        time.sleep(5) 
+        time.sleep(5) # Aumentata la pausa tra un replay e l'altro per far respirare il gioco
         
     bot.send_message(MIO_ID_TELEGRAM, "✅ Lista d'attesa svuotata! Tutti i replay sono stati registrati.")
     in_elaborazione = False
+
 
 
 def imposta_menu_comandi():
