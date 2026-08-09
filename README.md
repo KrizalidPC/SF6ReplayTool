@@ -173,4 +173,130 @@ Il bot imposterà automaticamente il menu dei comandi rapidi alla prima esecuzio
 
 Questo progetto è rilasciato sotto licenza **MIT**.
 
+-----------------------------------------------------
+# SF6 Replay Bot 🎮🤖
 
+Bot Telegram che automatizza la ricerca, registrazione e pubblicazione dei replay di **Street Fighter 6**: basta mandare al bot uno o più ID di replay, e lui fa navigare il gioco fino al replay richiesto, avvia la registrazione con OBS Studio, rinomina il video con i nomi dei due giocatori e ti chiede — con un pulsante su Telegram — se vuoi caricarlo su YouTube (come video "Non in elenco").
+
+## ✨ Funzionalità
+
+- **Telecomando via Telegram**: avvia SF6 e OBS, controlla lo stato del PC, spegni il PC da remoto.
+- **Coda replay**: invia più ID in un colpo solo (`/registra_replay ID1 ID2 ID3`), il bot li registra uno dopo l'altro.
+- **Navigazione automatica in-game**: uno script Lua (via [REFramework](https://github.com/praydog/REFramework)) porta da solo il gioco dal menu principale fino al replay richiesto.
+- **Registrazione automatica con OBS**: avvio/stop dell'OBS WebSocket sincronizzato con l'inizio e la fine del match, con un sistema di heartbeat che evita registrazioni "orfane" se qualcosa va storto in game.
+- **Rinomina automatica dei file**: `Giocatore1 vs Giocatore2 <ID replay>.mp4`, con gestione dei duplicati.
+- **Upload YouTube opzionale**: dopo ogni registrazione, il bot chiede conferma via pulsante prima di caricare il video (privacy "Non in elenco" di default).
+- **Auto-recovery di rete**: se la connessione a Telegram cade, il bot si riavvia da solo invece di chiudersi.
+
+## 🏗️ Architettura
+
+```
+┌─────────────────┐      JSON (coda replay)      ┌──────────────────────┐
+│  SF6ReplayScript │ ───────────────────────────▶ │  orchestrator.lua    │
+│  (bot Telegram)  │                               │  (dentro SF6, via    │
+│                  │ ◀─────────────────────────── │  REFramework)        │
+└────────┬─────────┘   JSON (trigger/heartbeat)    └──────────┬───────────┘
+         │                                                     │
+         │ OBS WebSocket                                       │ hook sui replay
+         ▼                                                     ▼
+┌──────────────────┐                                ┌──────────────────────┐
+│   OBS Studio      │                                │   recon.lua           │
+│  (registrazione)  │                                │  (metadata giocatori, │
+└────────┬───────────┘                                │   start/stop rec)     │
+         │                                            └──────────────────────┘
+         ▼
+┌──────────────────┐
+│ youtube_uploader  │
+│  (upload YouTube  │
+│   opzionale)      │
+└───────────────────┘
+```
+
+Il bot Python e gli script Lua comunicano **solo tramite file JSON** scambiati nella cartella `reframework/data` del gioco — nessuna connessione diretta tra i due mondi.
+
+## 📁 Struttura del progetto
+
+| File | Dove va installato | Cosa fa |
+|---|---|---|
+| `SF6ReplayScript.py` | PC, cartella a piacere | Bot Telegram principale, orchestratore generale |
+| `youtube_uploader.py` | Stessa cartella di `SF6ReplayScript.py` | Modulo per l'upload su YouTube via API v3 |
+| `orchestrator.lua` | `<cartella SF6>\reframework\autorun\` | Naviga automaticamente i menu del gioco fino al replay richiesto |
+| `recon.lua` | `<cartella SF6>\reframework\autorun\` | Rileva inizio/fine replay ed estrae i nomi dei giocatori |
+| `dinput8.dll` | Cartella principale del gioco (root, accanto all'eseguibile) | Loader di [REFramework](https://github.com/praydog/REFramework), necessario per eseguire gli script `.lua` |
+| `SF6REPLAYTOOL_INSTALLER.bat` | Stessa cartella di `SF6ReplayScript.py` | Installa automaticamente tutte le dipendenze Python |
+
+## ✅ Requisiti
+
+- Windows 10/11
+- [Python 3.10+](https://www.python.org/) (durante l'installazione, spunta "Add python.exe to PATH")
+- [OBS Studio](https://obsproject.com/) con il plugin **obs-websocket** abilitato (integrato di default dalla v28 in poi)
+- Street Fighter 6 su Steam
+- Un progetto su [Google Cloud Console](https://console.cloud.google.com/) con l'API "YouTube Data API v3" abilitata, se vuoi usare l'upload automatico
+- Un bot Telegram creato tramite [@BotFather](https://t.me/BotFather)
+
+## 🚀 Installazione
+
+1. **Installa REFramework nel gioco**
+   Copia `dinput8.dll` nella cartella principale di Street Fighter 6 (dove si trova l'eseguibile del gioco). Al primo avvio del gioco, REFramework creerà da solo la cartella `reframework/`.
+
+2. **Installa gli script Lua**
+   Copia `orchestrator.lua` e `recon.lua` dentro `<cartella SF6>\reframework\autorun\`.
+
+3. **Configura OBS**
+   In OBS Studio vai su `Strumenti → Impostazioni WebSocket-obs` e assicurati che il server sia attivo sulla porta `4455` (o aggiorna `OBS_PORT` nello script se ne usi una diversa).
+
+4. **Installa le dipendenze Python**
+   Metti `SF6ReplayScript.py`, `youtube_uploader.py` e `SF6REPLAYTOOL_INSTALLER.bat` nella stessa cartella, poi fai click destro su `SF6REPLAYTOOL_INSTALLER.bat` → **Esegui come amministratore**.
+
+5. **Configura le credenziali** (vedi sezione sotto)
+
+6. **Avvia il bot**
+   ```
+   python SF6ReplayScript.py
+   ```
+
+## ⚙️ Configurazione
+
+Apri `SF6ReplayScript.py` e imposta le variabili in cima al file:
+
+```python
+API_TOKEN = "IL_TUO_TOKEN_BOT_TELEGRAM"
+MIO_ID_TELEGRAM = 123456789   # il tuo ID numerico Telegram (es. da @userinfobot)
+
+OBS_PATH = r"C:\Program Files\obs-studio\bin\64bit\obs64.exe"
+QUEUE_FILE_PATH = r"D:\...\Street Fighter 6\reframework\data\replay_queue.json"
+BASE_DIR_LUA = pathlib.Path(r"D:\...\Street Fighter 6\reframework\data")
+```
+
+Per l'upload su YouTube, scarica da Google Cloud Console il file delle credenziali OAuth e rinominalo `client_secrets.json`, mettendolo nella stessa cartella di `youtube_uploader.py`. Al primo upload il bot aprirà il browser per farti autorizzare l'app; da lì in poi userà il `token.json` generato automaticamente.
+
+> ⚠️ **Attenzione, sicurezza**: `API_TOKEN`, `client_secrets.json` e `token.json` sono credenziali personali. **Non committarle mai su GitHub.** Se il repository è pubblico, aggiungi un file `.gitignore` con almeno:
+> ```
+> client_secrets.json
+> token.json
+> ```
+> e sposta `API_TOKEN` in una variabile d'ambiente invece di lasciarlo scritto nel codice, ad esempio:
+> ```python
+> API_TOKEN = os.environ["SF6BOT_TELEGRAM_TOKEN"]
+> ```
+
+## 🕹️ Comandi Telegram
+
+| Comando | Descrizione |
+|---|---|
+| `/status` | Mostra lo stato di SF6, OBS e la coda replay |
+| `/avvia_gioco` | Apre OBS Studio e Street Fighter 6 |
+| `/registra_replay ID1 ID2 ...` | Aggiunge uno o più replay alla coda di registrazione |
+| `/stop` | Interrompe tutto e svuota la coda |
+| `/spegni` | Spegne il PC da remoto (con 10 secondi di preavviso) |
+
+## 🔧 Troubleshooting
+
+- **Il bot non risponde ai comandi**: controlla che `MIO_ID_TELEGRAM` corrisponda al tuo vero ID Telegram.
+- **Lo script si chiude subito dopo l'avvio**: lancialo da terminale (`python SF6ReplayScript.py`), non con doppio click, per vedere il messaggio di errore reale invece che una finestra che sparisce.
+- **`ModuleNotFoundError: No module named 'youtube_uploader'`**: `youtube_uploader.py` deve stare nella stessa cartella di `SF6ReplayScript.py`.
+- **Errore `invalid_scope` durante il login Google**: cancella `token.json` e rifai il login: potrebbe essere rimasto un token generato con un permesso OAuth diverso da quello attuale.
+- **L'orchestratore in-game si blocca dopo un aggiornamento di SF6**: le patch di Capcom possono rinominare le schermate interne del gioco. Controlla le costanti `F_*` in cima a `orchestrator.lua`.
+
+## 📄 Licenza
+Questo progetto è rilasciato sotto licenza **MIT**.
